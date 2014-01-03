@@ -1,11 +1,12 @@
 var http = require("http");
 var querystring = require("querystring"); // 核心模块
-
-
- 
+var SBuffer=require("../tools/SBuffer");
+var common=require("../tools/common");
+var zlib=require("zlib");
+var redis_pool=require("../tools/connection_pool"); 
 
 function get_method (request, response){  
-  
+    console.time("req");
     var data = {  
         address: 'test@test.com',  
         subject: "test"  
@@ -20,7 +21,10 @@ function get_method (request, response){
         path: "/data",  
          
     };  
-    doRequests(opt, "", response,getReqConfig("poiKeywordServer"),data,doRequestCallBack) ;
+    var  rqobjConf=getReqConfig("poiKeywordServer");
+    rqobjConf.gzip=0;
+    rqobjConf.isjson=1;
+    doRequestsString(opt, "", response,rqobjConf,data,doRequestCallBack) ;
     
    //process.nextTick
 }
@@ -41,7 +45,6 @@ function EzHttpProxy(options,timeout,callback){
 	req.setTimeout(timeout,function(){
 		 req.emit('timeout',{message:'have been timeout...'});
 	});
-	
 	return req;
 }
 
@@ -50,37 +53,46 @@ function EzHttpProxy(options,timeout,callback){
 function getReqConfig(logName){
  
 	var Obj={};
-	Obj.errorCode=config[logName].errorCode||101;
-	Obj.logger=log4tongji.getLogger(logName);
+	Obj.errorCode=Config[logName].errorCode||101;
+	Obj.logger=Analysis.getLogger(logName);
 	Obj.name=logName;
-	Obj.desc=config[logName].desc ||"通用接口";
-	Obj.reqType=config[logName].reqType ||"通用接口";
-	Obj.resType=config[logName].resType ||"通用接口";
-	Obj.jsonck=config[logName].isjson ||0;
+	Obj.desc=Config[logName].desc ||"通用接口";
+	Obj.reqType=Config[logName].reqType ||"通用接口";
+	Obj.resType=Config[logName].resType ||"通用接口";
+	Obj.isjson=Config[logName].isjson ||0;
+	Obj.gzip = Config[logName].gzip ||0;
 	return Obj;
 }
+
 /**
  *远程接口回调 
  *@param response   下行response
- *@param resulStr   请求结果
- *@param res        上行res 
+ *@param result   请求结果{"data":data,"status":res.statuscode}
  *@param ReqConfig  api接口信息
  *@param redisop    redis操作     
  */  
-function doRequestCallBack(response,resultStr,res,ReqConfig){
-	 
-	var resultObj = common.isJson(response, resultStr, 'general'); // 判断返回结果是否是json格式
-	if (resultObj) { // 返回结果是json格式
-		resultStr = JSON.stringify(resultObj);
-		response.statusCode = res.status;
-	} else {
-		resultStr = '{"msg":["服务器返回数据非JSON格式"]}';
-		response.statusCode = 500;
+function doRequestCallBack(response,result,ReqConfig){
+	var resultStr = result.data;
+	if(ReqConfig.isjson==1){ 
+		
+		var resultObj = common.isJson(resultStr, 'general'); // 判断返回结果是否是json格式
+		if (resultObj) { // 返回结果是json格式
+			resultStr = JSON.stringify(resultObj);
+			response.statusCode = result.status;
+		} else {
+			resultStr = '{"msg":["服务器返回数据非JSON格式"]}';
+			response.statusCode = 500;
+		}
 	}
+	else{
+		response.statusCode = result.status;
+	}
+
 	var resultBuffer = new Buffer(resultStr);
+
 	//压缩输出
-	if(res.header['iszip']&&res.header['iszip']=="0"){
-		outputgzip(resultBuffer, response);
+	if( ReqConfig.gzip == 1){
+		gzipOutPut(resultBuffer, response);
 	}else{
 		response.setHeader("Content-Length", resultBuffer.length);
 		response.write(resultBuffer); // 以二进制流的方式输出数据
@@ -104,31 +116,31 @@ function doRequestCallBack(response,resultStr,res,ReqConfig){
  *@param doRequestCB  回调函数 参数 见 doRequestCallBack 
  *@param  redis    redis 对象
  */ 
-function doRequests(options, reqData, response,ReqConf,TongjiObj,doRequestCB) {
+function doRequestsString(options, reqData, response,ReqConf,TongjiObj,doRequestCB) {
 	var redisOpt=arguments[6]||"";
-	var req = EzHttpProxy(options, config.timeout, function(res) {
+	var req = EzHttpProxy(options, Config.timeout, function(res) {
   
 		var sbuffer=new SBuffer();
+		res.setEncoding("utf-8");
 		res.on('data', function (trunk) {
 			sbuffer.append(trunk);
 		});
 		res.on('end', function () {
-			doRequestCB(response, sbuffer.toString(),res,ReqConf,TongjiObj,redisOpt);
+			doRequestCB(response, {"data":sbuffer.toString(),"status":res.statusCode},ReqConf,TongjiObj,redisOpt);
 		});
 	});
 	req.on('error', function(e) {
-		//errorLog 为全局变量
-		writeLogs.logs(errorLog, 'error',{ 
+		response.setHeader("Content-Type", Config.contentType);
+		response.statusCode = 500;
+		response.end('{}');
+		
+		writeLogs.logs(Analysis.getLogger('error'), 'error',{ 
 			msg : ReqConf.errorCode+ReqConf.name+ReqConf.desc+'请求后台服务失败' + e.stack,
 			errorCode :ReqConf.errorCode 
 		});
-		
+		TongjiObj.status=500;
 		
 		writeLogs.logs(ReqConf.logger, ReqConf.name,TongjiObj);
-		
-		response.setHeader("Content-Type", config.contentType);
-		response.statusCode = 500;
-		response.end('{}');
 	});
 	req.on('timeout', function(e) {
 		req.emit('error', new Error('have been timeout...'));
@@ -151,7 +163,7 @@ function setRedisData(redis_key, redis_time, resultBuffer) {
 			});
 			logger.debug(redis_key + '设置缓存数据成功！');
 		} else {
-			writeLogs.logs(error, 'error', {
+			writeLogs.logs(Analysis.getLogger('error'), 'error', {
 				msg : 'redis_general保存数据到redis缓存数据库时链接redis数据库异常',
 				err : 14
 			});
@@ -161,5 +173,25 @@ function setRedisData(redis_key, redis_time, resultBuffer) {
 }
 
 
-exports.modules=get_method;
+/**
+ * 输出gzip数据
+ * @param resultBuffer 
+ * @param response
+ */
+function gzipOutPut(resultBuffer,response){
+	zlib.gzip(resultBuffer, function(code, buffer){						// 对服务器返回的数据进行压缩
+        if (code != null) { // 如果正常结束
+        	logger.debug('压缩成功,压缩前:'+resultBuffer.length+',压缩后:'+buffer.length);
+        	response.setHeader('Content-Encoding', 'gzip');					//压缩标志
+        } else {
+			buffer = new Buffer( '{"msg":["服务器返回数据非JSON格式"]}');
+			response.statusCode=500;
+        }
+        response.setHeader("Content-Length", buffer.length);
+		response.write(buffer);
+	    response.end();	
+	});
+}
+
+exports.get_method=get_method;
  

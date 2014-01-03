@@ -116,7 +116,35 @@ function headersAndData(RequestData,headerString){
 	}
 }
 
+var str=[poiKeywordServer: {"code":1,"desc":"","resType":"","reqType":"","reqMethod":"GET","reqPath":"","isjson":1,"gzip":1},
+	poiListServer: {"code":1,"desc":"","resType":"","reqType":"","reqMethod":"GET","reqPath":"","isjson":1,"gzip":1},
+	poiListInfoServer: {"code":1,"desc":"","resType":"","reqType":"","reqMethod":"GET","reqPath":"","isjson":1,"gzip":1},
+	poiDetailServer: {"code":1,"desc":"","resType":"","reqType":"","reqMethod":"GET","reqPath":"","isjson":1,"gzip":1},
+	loginServer: {"code":1,"desc":"","resType":"","reqType":"","reqMethod":"GET","reqPath":"","isjson":1,"gzip":1},
+	rvsServer: {"code":1,"desc":"","resType":"","reqType":"","reqMethod":"GET","reqPath":"","isjson":1,"gzip":1},
+	mapServer: {"code":1,"desc":"","resType":"","reqType":"","reqMethod":"GET","reqPath":"","isjson":1,"gzip":1},
+	npsServer: {"code":1,"desc":"","resType":"","reqType":"","reqMethod":"GET","reqPath":"","isjson":1,"gzip":1},
+	rtsServer: {"code":1,"desc":"","resType":"","reqType":"","reqMethod":"GET","reqPath":"","isjson":1,"gzip":1},
+	queryServer: {"code":1,"desc":"","resType":"","reqType":"","reqMethod":"GET","reqPath":"","isjson":1,"gzip":1},
+	scenicServer: {"code":1,"desc":"","resType":"","reqType":"","reqMethod":"GET","reqPath":"","isjson":1,"gzip":1},
+	friendServer: {"code":1,"desc":"","resType":"","reqType":"","reqMethod":"GET","reqPath":"","isjson":1,"gzip":1},
+	edriverServer: {"code":1,"desc":"","resType":"","reqType":"","reqMethod":"GET","reqPath":"","isjson":1,"gzip":1},
+	shorturlServer: {"code":1,"desc":"","resType":"","reqType":"","reqMethod":"GET","reqPath":"","isjson":1,"gzip":1},
+	themeServer: {"code":1,"desc":"","resType":"","reqType":"","reqMethod":"GET","reqPath":"","isjson":1,"gzip":1},
+	themegisServer: {"code":1,"desc":"","resType":"","reqType":"","reqMethod":"GET","reqPath":"","isjson":1,"gzip":1},
+	mapDownload: {"code":1,"desc":"","resType":"","reqType":"","reqMethod":"GET","reqPath":"","isjson":1,"gzip":1},
+	userloginServer: {"code":1,"desc":"","resType":"","reqType":"","reqMethod":"GET","reqPath":"","isjson":1,"gzip":1},
+	registphoneServer: {"code":1,"desc":"","resType":"","reqType":"","reqMethod":"GET","reqPath":"","isjson":1,"gzip":1},
+	error: {"code":1,"desc":"","resType":"","reqType":"","reqMethod":"GET","reqPath":"","isjson":1,"gzip":1},
+	navidog2NewsServer: {"code":1,"desc":"","resType":"","reqType":"","reqMethod":"GET","reqPath":"","isjson":1,"gzip":1},
+	testServerPost: {"code":171,"desc":"","resType":"测试post","reqType":"","reqMethod":"GET","reqPath":"","isjson":0,"gzip":0},
+	testServerGet: {"code":181,"desc":"","resType":"测试get","reqType":"","reqMethod":"GET","reqPath":"","isjson":0,"gzip":0}]
 
+ var p=	["poiKeywordServer","poiListServer","poiListInfoServer","poiDetailServer","loginServer","rvsServer","mapServer","npsServer","rtsServer","queryServer","scenicServer","friendServer","edriverServer","shorturlServer","themeServer","themegisServer","mapDownload","userloginServer","registphoneServer","error","navidog2NewsServer","testServerPost","testServerGet"];
+ var i;
+ for(var i in p){
+  console.log(p[i] +": "+'{"code":1,"desc":"","resType":"","reqType":"","reqMethod":"GET","reqPath":"","isjson":1,"gzip":1}') ;
+ }
  
  
 

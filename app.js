@@ -34,22 +34,19 @@ var log4js = require('log4js');
 var log4tongji = require('tongji_log');
 var initLogger = require('./tools/base').initLogger;
 
-
-var nameLists=Config.loger4jsNames;
-log4js.loadAppender('file');
-logger.addAppender(logger.appenders.file(Config.logerPath+nameLists[0]+".log"),nameLists[0]);  //navidog4
-
-initLogger(log4js,Config.loger4jsNames);            //初始化 loger对象
+initLogger(log4js,Config.loger4jsNames,true);            //初始化 logger
 initLogger(log4tongji,Config.tongjiLogerNames);     //初始化 统计对象
-global.errorLog=log4tongji.getLogger('error');		//全局变量 errorLog 
+
+global.Analysis=log4tongji;		                    //全局变量 Analysis 
 global.logger=log4js.getLogger('navidog4');			//全局变量 logger 
 
-logger.setLevel('INFO');
+logger.setLevel('TRACE');
 
 var writeLogs = require('./tools/writeLogsV2');
- var app = express();
- 
+var app = express();
 
+var routes=require('./routes/routes2'); 
+ 
 app.configure('development', function() {		// 定义开发环境
 	app.use(express.static(static_dir));
 	app.use(express.errorHandler({dumpExceptions : true,showStack : true}));
@@ -62,10 +59,10 @@ app.configure('production', function() {		// 定义生产环境
 	app.set('view cache', true);
 });
 
-//routes.route(app); 					// 把应用传递给路由选择模块
+routes.route(app); 					// 把应用传递给路由选择模块
 app.listen(Config.port);
 process.on('uncaughtException', function(err) {
 	logger.error('nodejs 进程异常: ' + err.stack); // 打印出堆栈信息
-	writeLogs.logs(errorLog,'error',{msg:'nodejs 进程异常,'+err.stack,errorCode:10});
+	writeLogs.logs(Analysis.getLogger('error'),'error',{msg:'nodejs 进程异常,'+err.stack,errorCode:10});
 });
-logger.info('服务启动监听端口:' + config.port);
+logger.info('服务启动监听端口:' + Config.port);
